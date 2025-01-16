@@ -61,6 +61,29 @@ def feed_forward(A0):
     return y_hat
 
 
+def cost(y_hat, y):
+    """
+    y_hat should be a n^L x m matrix
+    y should be a n^L x m matrix
+    """
+    # 1. losses is a n^L x m
+    losses = -((y * np.log(y_hat)) + (1 - y) * np.log(1 - y_hat))
+
+    m = y_hat.reshape(-1).shape[0]
+
+    # 2. summing across axis = 1 means we sum across rows,
+    #   making this a n^L x 1 matrix
+    summed_losses = (1 / m) * np.sum(losses, axis=1)
+
+    # 3. unnecessary, but useful if working with more than one node
+    #   in output layer
+    return np.sum(summed_losses)
+
+
 A0, Y = prepare_data()
 y_hat = feed_forward(A0)
-print(y_hat)
+
+
+cost_value = cost(y_hat, Y)
+
+print(cost_value)
