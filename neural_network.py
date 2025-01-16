@@ -85,7 +85,7 @@ def sigmoid_derivative(A):
     return A * (1 - A)
 
 
-def backward_propagation(A0, Y, learning_rate=0.01):
+def backward_propagation(A0, Y, learning_rate=0.1):
     """
     Compute gradients and update weights/biases
     """
