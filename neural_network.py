@@ -1,155 +1,69 @@
 import numpy as np
 
-# 1. create network architecture
-L = 3
-n = [2, 3, 3, 1]
 
-# 2. create weights and biases
-W1 = np.random.randn(n[1], n[0])
-W2 = np.random.randn(n[2], n[1])
-W3 = np.random.randn(n[3], n[2])
-b1 = np.random.randn(n[1], 1)
-b2 = np.random.randn(n[2], 1)
-b3 = np.random.randn(n[3], 1)
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
 
 
-# 3. create training data and labels
-def prepare_data():
-    X = np.array(
-        [
-            [150, 70],
-            [254, 73],
-            [312, 68],
-            [120, 60],
-            [154, 61],
-            [212, 65],
-            [216, 67],
-            [145, 67],
-            [184, 64],
-            [130, 69],
-        ]
-    )
-    y = np.array([0, 1, 1, 0, 0, 1, 1, 0, 1, 0])
-    m = 10
-    A0 = X.T
-    Y = y.reshape(n[L], m)
-
-    return A0, Y
+def sigmoid_derivative(x):
+    return sigmoid(x) * (1 - sigmoid(x))
 
 
-# 4. create activation function
-def sigmoid(arr):
-    return 1 / (1 + np.exp(-1 * arr))
+W1 = np.array([[0.5, -0.2], [0.3, 0.8]])
+
+b1 = np.array([[0.1], [-0.1]])
+
+W2 = np.array([[0.7, -0.5]])
+
+b2 = np.array([[0.2]])
+
+X = np.array([[1], [2]])
+
+Z1 = np.dot(W1, X) + b1
+
+A1 = sigmoid(Z1)
+
+Z2 = np.dot(W2, A1) + b2
+
+A2 = sigmoid(Z2)
 
 
-# 5. create feed forward process
-def feed_forward(A0):
+Y = np.array([[1]])
 
-    # layer 1 calculations
-    Z1 = W1 @ A0 + b1
-    A1 = sigmoid(Z1)
+C = 0.5 * (A2 - Y) ** 2
 
-    # layer 2 calculations
-    Z2 = W2 @ A1 + b2
-    A2 = sigmoid(Z2)
+print("A2:", A2)
+print("Y:", Y)
+print("Cost:", C)
 
-    # layer 3 calculations
-    Z3 = W3 @ A2 + b3
-    A3 = sigmoid(Z3)
+# Backpropagation
+# Calculate gradients
+dC_dA2 = A2 - Y  # Derivative of cost with respect to A2
+dA2_dZ2 = sigmoid_derivative(Z2)  # Derivative of A2 with respect to Z2
+dC_dZ2 = dC_dA2 * dA2_dZ2  # Chain rule
 
-    y_hat = A3
-    return y_hat
+# Gradients for W2 and b2
+dC_dW2 = np.dot(dC_dZ2, A1.T)  # Gradient for W2
+dC_db2 = dC_dZ2  # Gradient for b2
 
+# Backpropagation to hidden layer
+dZ2_dA1 = W2.T  # Derivative of Z2 with respect to A1
+dC_dA1 = np.dot(dZ2_dA1, dC_dZ2)  # Gradient for A1
+dA1_dZ1 = sigmoid_derivative(Z1)  # Derivative of A1 with respect to Z1
+dC_dZ1 = dC_dA1 * dA1_dZ1  # Chain rule
 
-def cost(y_hat, y):
-    """
-    y_hat should be a n^L x m matrix
-    y should be a n^L x m matrix
-    """
-    # 1. losses is a n^L x m
-    losses = -((y * np.log(y_hat)) + (1 - y) * np.log(1 - y_hat))
+# Gradients for W1 and b1
+dC_dW1 = np.dot(dC_dZ1, X.T)  # Gradient for W1
+dC_db1 = dC_dZ1  # Gradient for b1
 
-    m = y_hat.reshape(-1).shape[0]
+# Update weights and biases
+learning_rate = 0.01
+W2 -= learning_rate * dC_dW2
+b2 -= learning_rate * dC_db2
+W1 -= learning_rate * dC_dW1
+b1 -= learning_rate * dC_db1
 
-    # 2. summing across axis = 1 means we sum across rows,
-    #   making this a n^L x 1 matrix
-    summed_losses = (1 / m) * np.sum(losses, axis=1)
-
-    # 3. unnecessary, but useful if working with more than one node
-    #   in output layer
-    return np.sum(summed_losses)
-
-
-def sigmoid_derivative(A):
-    """Derivative of sigmoid function"""
-    return A * (1 - A)
-
-
-def backward_propagation(A0, Y, learning_rate=0.1):
-    """
-    Compute gradients and update weights/biases
-    """
-    global W1, W2, W3, b1, b2, b3
-    m = A0.shape[1]  # number of training examples
-
-    # Forward pass (saving intermediate values)
-    Z1 = W1 @ A0 + b1
-    A1 = sigmoid(Z1)
-
-    Z2 = W2 @ A1 + b2
-    A2 = sigmoid(Z2)
-
-    Z3 = W3 @ A2 + b3
-    A3 = sigmoid(Z3)
-
-    # Backward pass
-    # Layer 3 derivatives
-    dZ3 = A3 - Y
-    dW3 = (1 / m) * (dZ3 @ A2.T)
-    db3 = (1 / m) * np.sum(dZ3, axis=1, keepdims=True)
-
-    # Layer 2 derivatives
-    dZ2 = (W3.T @ dZ3) * sigmoid_derivative(A2)
-    dW2 = (1 / m) * (dZ2 @ A1.T)
-    db2 = (1 / m) * np.sum(dZ2, axis=1, keepdims=True)
-
-    # Layer 1 derivatives
-    dZ1 = (W2.T @ dZ2) * sigmoid_derivative(A1)
-    dW1 = (1 / m) * (dZ1 @ A0.T)
-    db1 = (1 / m) * np.sum(dZ1, axis=1, keepdims=True)
-
-    # Update weights and biases
-    W3 = W3 - learning_rate * dW3
-    b3 = b3 - learning_rate * db3
-    W2 = W2 - learning_rate * dW2
-    b2 = b2 - learning_rate * db2
-    W1 = W1 - learning_rate * dW1
-    b1 = b1 - learning_rate * db1
-
-
-# Training loop
-def train(epochs=1000):
-    """Train the neural network"""
-    A0, Y = prepare_data()
-    costs = []
-
-    for i in range(epochs):
-        # Forward propagation
-        y_hat = feed_forward(A0)
-
-        # Compute cost
-        cost_value = cost(y_hat, Y)
-
-        # Backward propagation
-        backward_propagation(A0, Y)
-
-        # Store cost every 100 epochs
-        if i % 100 == 0:
-            costs.append(cost_value)
-            print(f"Epoch {i}, Cost: {cost_value}")
-
-    return costs
-
-
-# Train the network
-costs = train()
+print("Updated W1:", W1)
+print("Updated b1:", b1)
+print("Updated W2:", W2)
+print("Updated b2:", b2)
